@@ -3,29 +3,41 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
+import uvicorn
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import analyses, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.schemas.errors import ErrorDetail, ErrorResponse
 
+MAX_REQUEST_BODY_BYTES = 64 * 1024
+HTTP_ERROR_CODES = {
+    status.HTTP_404_NOT_FOUND: "NOT_FOUND",
+    status.HTTP_405_METHOD_NOT_ALLOWED: "METHOD_NOT_ALLOWED",
+    status.HTTP_413_CONTENT_TOO_LARGE: "REQUEST_TOO_LARGE",
+    status.HTTP_429_TOO_MANY_REQUESTS: "RATE_LIMITED",
+}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.analyses = {}
-    app.state.ready = True
+    app.state.readiness_checks = {"bootstrap": "ready"}
     yield
-    app.state.ready = False
+    app.state.readiness_checks = {"bootstrap": "not_ready"}
 
 
 def error_response(*, status_code: int, code: str, message: str, request: Request) -> JSONResponse:
     request_id = getattr(request.state, "request_id", str(uuid4()))
     payload = ErrorResponse(error=ErrorDetail(code=code, message=message, request_id=request_id))
-    return JSONResponse(status_code=status_code, content=payload.model_dump(by_alias=True))
+    response = JSONResponse(status_code=status_code, content=payload.model_dump(by_alias=True))
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -33,7 +45,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="Veritas API",
         version="0.1.0",
-        description="Decision intelligence API for evidence, financial stress tests, and validation plans.",
+        description=(
+            "Decision intelligence API for evidence, financial stress tests, and validation plans."
+        ),
         lifespan=lifespan,
     )
     app.add_middleware(
@@ -46,8 +60,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     @app.middleware("http")
-    async def add_request_id(request: Request, call_next):
+    async def add_request_id_and_limit_body(request: Request, call_next):
         request.state.request_id = request.headers.get("X-Request-ID", str(uuid4()))
+        content_length = request.headers.get("Content-Length")
+        try:
+            is_request_too_large = (
+                content_length is not None and int(content_length) > MAX_REQUEST_BODY_BYTES
+            )
+        except ValueError:
+            is_request_too_large = False
+        if is_request_too_large:
+            response = error_response(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                code="REQUEST_TOO_LARGE",
+                message="Request body exceeds the allowed size",
+                request=request,
+            )
+            return response
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
         return response
@@ -59,11 +88,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
     @app.exception_handler(RequestValidationError)
-    async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    async def validation_error_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
         return error_response(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             code="VALIDATION_ERROR",
             message="Request validation failed",
+            request=request,
+        )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        message = (
+            exc.detail
+            if isinstance(exc.detail, str) and exc.status_code < 500
+            else "Request failed"
+        )
+        return error_response(
+            status_code=exc.status_code,
+            code=HTTP_ERROR_CODES.get(exc.status_code, "HTTP_ERROR"),
+            message=message,
+            request=request,
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
+        return error_response(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            code="INTERNAL_SERVER_ERROR",
+            message="An unexpected error occurred",
             request=request,
         )
 
@@ -73,3 +127,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 app = create_app()
+
+
+def run() -> None:
+    """Run Uvicorn with host and port sourced from application settings."""
+    settings = get_settings()
+    uvicorn.run(
+        "app.main:app",
+        host=settings.app_host,
+        port=settings.app_port,
+        reload=settings.app_env == "development",
+    )
+
+
+if __name__ == "__main__":
+    run()

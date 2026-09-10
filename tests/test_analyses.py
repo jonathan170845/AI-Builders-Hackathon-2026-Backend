@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
-
 
 VALID_PAYLOAD = {
     "decision": "Scale on-demand grocery delivery to five new cities",
@@ -18,6 +17,13 @@ VALID_PAYLOAD = {
         "cashBalance": 500_000_000,
     },
 }
+
+
+def payload_with_financial_input(**overrides):
+    return {
+        **VALID_PAYLOAD,
+        "financialInputs": {**VALID_PAYLOAD["financialInputs"], **overrides},
+    }
 
 
 def test_create_analysis_returns_queued_job_and_location(client):
@@ -47,7 +53,7 @@ def test_created_analysis_can_be_polled(client):
 
 
 def test_unknown_analysis_uses_error_envelope(client):
-    response = client.get("/api/v1/analyses/missing")
+    response = client.get(f"/api/v1/analyses/{uuid4()}")
 
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "ANALYSIS_NOT_FOUND"
@@ -56,20 +62,59 @@ def test_unknown_analysis_uses_error_envelope(client):
 
 
 @pytest.mark.parametrize(
-    ("payload", "field"),
+    "payload",
     [
-        ({**VALID_PAYLOAD, "decision": "   "}, "decision"),
-        ({**VALID_PAYLOAD, "financialInputs": {**VALID_PAYLOAD["financialInputs"], "monthlyOrders": -1}}, "monthlyOrders"),
-        ({**VALID_PAYLOAD, "financialInputs": {**VALID_PAYLOAD["financialInputs"], "monthlyOrders": "NaN"}}, "monthlyOrders"),
-        ({**VALID_PAYLOAD, "unexpected": True}, "unexpected"),
+        {**VALID_PAYLOAD, "decision": "   "},
+        payload_with_financial_input(monthlyOrders=-1),
+        payload_with_financial_input(monthlyOrders=1.5),
+        payload_with_financial_input(monthlyOrders=10**12 + 1),
+        payload_with_financial_input(monthlyOrders="NaN"),
+        payload_with_financial_input(revenuePerOrder=10**15 + 1),
+        payload_with_financial_input(revenuePerOrder=1.00001),
+        {**VALID_PAYLOAD, "financialInputs": {"monthlyOrders": 1}},
+        {**VALID_PAYLOAD, "unexpected": True},
     ],
 )
-def test_invalid_create_request_returns_validation_envelope(client, payload, field):
+def test_invalid_create_request_returns_validation_envelope(client, payload):
     response = client.post("/api/v1/analyses", json=payload)
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
-    assert field not in response.json()["error"]
+    UUID(response.json()["error"]["requestId"])
+
+
+def test_oversized_request_uses_error_envelope(client):
+    response = client.post(
+        "/api/v1/analyses",
+        content=b" " * (64 * 1024 + 1),
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "REQUEST_TOO_LARGE"
+
+
+def test_invalid_analysis_id_uses_validation_error_envelope(client):
+    response = client.get("/api/v1/analyses/not-a-uuid")
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_unknown_route_uses_error_envelope(client):
+    response = client.get("/api/v1/not-a-route", headers={"X-Request-ID": "request-123"})
+
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "NOT_FOUND"
+    assert response.json()["error"]["requestId"] == "request-123"
+    assert response.headers["x-request-id"] == "request-123"
+
+
+def test_method_not_allowed_uses_error_envelope(client):
+    response = client.put("/api/v1/analyses")
+
+    assert response.status_code == 405
+    assert response.json()["error"]["code"] == "METHOD_NOT_ALLOWED"
 
 
 def test_cors_allows_configured_origin(client):
@@ -101,8 +146,16 @@ def test_cors_rejects_unknown_origin(client):
 def test_openapi_preserves_camel_case_contract(client):
     schema = client.get("/openapi.json").json()
     request_schema = schema["components"]["schemas"]["CreateAnalysisRequest"]
-    result_schema = schema["components"]["schemas"]["FinancialResults"]
+    financial_inputs_schema = schema["components"]["schemas"]["FinancialInputs"]
+    analysis_result_schema = schema["components"]["schemas"]["AnalysisResult"]
+    failed_schema = schema["components"]["schemas"]["AnalysisFailed"]
 
     assert "financialInputs" in request_schema["properties"]
     assert "financial_inputs" not in request_schema["properties"]
-    assert result_schema["properties"]["runwayMonths"]["anyOf"][-1] == {"type": "null"}
+    assert request_schema["properties"]["decision"]["minLength"] == 10
+    assert financial_inputs_schema["properties"]["monthlyOrders"]["type"] == "integer"
+    assert financial_inputs_schema["properties"]["monthlyOrders"]["maximum"] == 10**12
+    assert analysis_result_schema["properties"]["financialResults"]["anyOf"][-1] == {"type": "null"}
+    assert "status" not in analysis_result_schema["properties"]
+    assert "error" in failed_schema["properties"]
+    assert "stage" in failed_schema["required"]
