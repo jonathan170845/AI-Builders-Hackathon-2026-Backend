@@ -152,15 +152,15 @@ class FailureMechanism(ApiModel):
     title: str
     description: str
     source: str
-    year: int
+    year: int | None
 
 
 class CompanyAnalogue(ApiModel):
     id: str
     name: str
     context: str
-    outcome: Literal["Failed", "Pivoted", "Succeeded"]
-    year_range: str
+    outcome: Literal["Failed", "Pivoted", "Succeeded"] | None
+    year_range: str | None
     relevance: str
 
 
@@ -177,8 +177,8 @@ class SourceItem(ApiModel):
     id: str
     title: str
     type: Literal["Academic", "Industry Report", "News", "Case Study", "Financial Filing"]
-    year: int
-    url: str
+    year: int | None
+    url: str | None
 
 
 class IdxBenchmark(ApiModel):

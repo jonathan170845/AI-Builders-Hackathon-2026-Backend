@@ -34,7 +34,7 @@ ERROR_RESPONSES = {
 async def create_analysis(
     payload: CreateAnalysisRequest, request: Request, response: Response
 ) -> AnalysisAccepted:
-    """Queue an analysis; background execution is introduced in Issue 005."""
+    """Queue an analysis; background execution is introduced separately."""
     analysis_id = uuid4()
     created_at = datetime.now(UTC)
     item = AnalysisPending(

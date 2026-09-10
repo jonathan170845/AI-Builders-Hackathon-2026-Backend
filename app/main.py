@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
@@ -13,6 +14,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.routes import analyses, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
+from app.db.cache import LLMCache
+from app.db.session import create_engine_and_session_factory
 from app.schemas.errors import ErrorDetail, ErrorResponse
 from app.services.artifacts import ArtifactValidationError, DataArtifacts, load_data_artifacts
 from app.services.retrieval import RetrievalError, RetrievalService, SentenceTransformerEncoder
@@ -28,10 +31,24 @@ HTTP_ERROR_CODES = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings: Settings = app.state.settings
     app.state.analyses = {}
+    # Pass this process-wide semaphore to every OpenRouter client created by a worker.
+    app.state.llm_provider_semaphore = asyncio.Semaphore(settings.llm_global_concurrency)
+    engine, session_factory = create_engine_and_session_factory(settings.database_url)
+    app.state.db_engine = engine
+    app.state.db_session_factory = session_factory
+    app.state.llm_cache = (
+        LLMCache(
+            session_factory,
+            retention_days=settings.llm_cache_retention_days,
+            max_rows=settings.llm_cache_max_rows,
+        )
+        if settings.llm_cache_enabled
+        else None
+    )
     app.state.data_artifacts = None
     app.state.retrieval_service = None
-    settings: Settings = app.state.settings
     try:
         artifacts, retrieval_service = initialize_retrieval(settings)
         app.state.data_artifacts = artifacts
@@ -42,6 +59,7 @@ async def lifespan(app: FastAPI):
     except RetrievalError:
         app.state.readiness_checks = {"artifacts": "ready", "embedding_model": "not_ready"}
     yield
+    engine.dispose()
     app.state.readiness_checks = {"artifacts": "not_ready", "embedding_model": "not_ready"}
 
 
