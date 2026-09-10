@@ -156,6 +156,9 @@ def test_openapi_preserves_camel_case_contract(client):
     assert financial_inputs_schema["properties"]["monthlyOrders"]["type"] == "integer"
     assert financial_inputs_schema["properties"]["monthlyOrders"]["maximum"] == 10**12
     assert analysis_result_schema["properties"]["financialResults"]["anyOf"][-1] == {"type": "null"}
+    idx_benchmark_schema = schema["components"]["schemas"]["IdxBenchmark"]
+    assert idx_benchmark_schema["properties"]["comparisonType"]["const"] == "directional"
+    assert idx_benchmark_schema["properties"]["sampleSize"]["minimum"] == 1
     assert "status" not in analysis_result_schema["properties"]
     assert "error" in failed_schema["properties"]
     assert "stage" in failed_schema["required"]

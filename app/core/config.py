@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     openrouter_model: str | None = None
     embedding_model_path_or_id: str | None = None
     retrieval_max_top_k: int = Field(default=10, ge=1, le=50)
+    financial_low_runway_months: float = Field(default=6, ge=0, le=120)
 
     @field_validator("frontend_origins", mode="before")
     @classmethod

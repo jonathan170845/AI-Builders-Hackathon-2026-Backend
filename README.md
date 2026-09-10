@@ -40,6 +40,19 @@ akan menggantinya dengan penyimpanan persisten dan worker background.
 adalah integer dan setiap nilai uang dibatasi agar tetap aman untuk kalkulasi berikutnya.
 Nilai uang masih unit-agnostic, sehingga frontend tidak boleh mengasumsikan simbol currency.
 
+## Financial stress test
+
+`app.services.financial.run_financial_stress_test` adalah source of truth untuk unit
+economics. Nilai uang dihitung dengan `Decimal(str(input))`, dibulatkan `ROUND_HALF_UP`
+ke dua digit hanya saat dipetakan ke API; persentase dan runway dibulatkan ke empat digit.
+`runwayMonths` bernilai `null` ketika tidak ada burn dan `breakEvenOrders` bernilai `null`
+ketika margin kontribusi per order tidak positif. `FINANCIAL_LOW_RUNWAY_MONTHS` menentukan
+ambang warning runway (default 6 bulan).
+
+IDX hanya dibandingkan secara *directional*: contribution-margin ratio dibandingkan dengan
+gross margin IDX dan response membawa disclaimer eksplisit. Metrik IDX lain tidak dikirim
+karena input saat ini tidak menyediakan accounting debt, assets, atau operating cash flow.
+
 ## Konfigurasi
 
 Salin `.env.example` menjadi `.env`. Jangan masukkan `.env` atau API key ke Git.

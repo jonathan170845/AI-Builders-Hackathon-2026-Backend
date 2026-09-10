@@ -186,6 +186,10 @@ class IdxBenchmark(ApiModel):
     value: str
     benchmark: str
     status: Literal["Below Benchmark", "At Benchmark", "Above Benchmark"]
+    comparison_type: Literal["directional"]
+    benchmark_metric: Literal["gross_margin"]
+    sample_size: int = Field(ge=1)
+    disclaimer: str
 
 
 class AnalysisResult(ApiModel):
