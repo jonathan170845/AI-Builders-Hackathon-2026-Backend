@@ -14,6 +14,8 @@ from app.api.routes import analyses, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
 from app.schemas.errors import ErrorDetail, ErrorResponse
+from app.services.artifacts import ArtifactValidationError, DataArtifacts, load_data_artifacts
+from app.services.retrieval import RetrievalError, RetrievalService, SentenceTransformerEncoder
 
 MAX_REQUEST_BODY_BYTES = 64 * 1024
 HTTP_ERROR_CODES = {
@@ -27,9 +29,30 @@ HTTP_ERROR_CODES = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.analyses = {}
-    app.state.readiness_checks = {"bootstrap": "ready"}
+    app.state.data_artifacts = None
+    app.state.retrieval_service = None
+    settings: Settings = app.state.settings
+    try:
+        artifacts, retrieval_service = initialize_retrieval(settings)
+        app.state.data_artifacts = artifacts
+        app.state.retrieval_service = retrieval_service
+        app.state.readiness_checks = {"artifacts": "ready", "embedding_model": "ready"}
+    except ArtifactValidationError:
+        app.state.readiness_checks = {"artifacts": "not_ready", "embedding_model": "not_ready"}
+    except RetrievalError:
+        app.state.readiness_checks = {"artifacts": "ready", "embedding_model": "not_ready"}
     yield
-    app.state.readiness_checks = {"bootstrap": "not_ready"}
+    app.state.readiness_checks = {"artifacts": "not_ready", "embedding_model": "not_ready"}
+
+
+def initialize_retrieval(settings: Settings) -> tuple[DataArtifacts, RetrievalService]:
+    """Construct the only artifact/model instances used by this API process."""
+    artifacts = load_data_artifacts(settings.resolved_data_dir)
+    if not settings.embedding_model_path_or_id:
+        raise RetrievalError("Embedding model is not configured")
+    model = artifacts.manifest["embedding_model"]
+    encoder = SentenceTransformerEncoder(settings.embedding_model_path_or_id, model.get("revision"))
+    return artifacts, RetrievalService(artifacts, encoder, max_top_k=settings.retrieval_max_top_k)
 
 
 def error_response(*, status_code: int, code: str, message: str, request: Request) -> JSONResponse:
@@ -50,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ),
         lifespan=lifespan,
     )
+    app.state.settings = settings
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.frontend_origins,

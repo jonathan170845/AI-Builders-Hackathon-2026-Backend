@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = None
     openrouter_model: str | None = None
     embedding_model_path_or_id: str | None = None
+    retrieval_max_top_k: int = Field(default=10, ge=1, le=50)
 
     @field_validator("frontend_origins", mode="before")
     @classmethod
@@ -31,6 +32,14 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip().rstrip("/") for origin in value.split(",") if origin.strip()]
         return [origin.rstrip("/") for origin in value]
+
+    @property
+    def resolved_data_dir(self) -> Path:
+        """Resolve a relative data directory from the backend root, never the CWD."""
+        if self.data_dir.is_absolute():
+            return self.data_dir
+        backend_root = Path(__file__).resolve().parents[2]
+        return (backend_root / self.data_dir).resolve()
 
 
 @lru_cache

@@ -8,3 +8,5 @@ coverage.xml
 htmlcov/
 *.db
 *.sqlite3
+# Prepared datasets can be large and may have redistribution restrictions.
+prepared-data/

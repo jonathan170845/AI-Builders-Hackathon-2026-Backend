@@ -43,8 +43,37 @@ Nilai uang masih unit-agnostic, sehingga frontend tidak boleh mengasumsikan simb
 ## Konfigurasi
 
 Salin `.env.example` menjadi `.env`. Jangan masukkan `.env` atau API key ke Git.
-`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, dan `EMBEDDING_MODEL_PATH_OR_ID` belum
-digunakan hingga pipeline AI/retrieval diimplementasikan.
+`EMBEDDING_MODEL_PATH_OR_ID` harus menunjuk ke model SentenceTransformer yang sama dengan
+manifest artifact. Untuk deployment offline, letakkan model yang telah diaudit di disk dan
+gunakan path tersebut; proses API tidak boleh mengandalkan download model saat startup.
+
+## Menyiapkan artifact retrieval
+
+Raw artifact di `../AI-Builders-Hackathon-2026-Data/Data_Final` belum lengkap untuk runtime:
+embedding historical failure dan manifest sengaja tidak dibuat otomatis oleh API. Siapkan
+direktori terpisah (yang di-ignore Git) sekali, setelah memverifikasi lisensi dan provenance
+dataset serta model:
+
+```powershell
+uv run python scripts/prepare_data.py `
+  --source-dir ../AI-Builders-Hackathon-2026-Data/Data_Final `
+  --output-dir ./prepared-data `
+  --model <path-atau-model-id-yang-diaudit> `
+  --model-id <model-id> `
+  --model-revision <immutable-revision>
+```
+
+Set `DATA_DIR=./prepared-data` dan `EMBEDDING_MODEL_PATH_OR_ID` ke model yang sama.
+Gunakan `RETRIEVAL_MAX_TOP_K` (1--50, default 10) untuk membatasi jumlah evidence per query.
+`prepare_data.py` melakukan scan penuh NaN/Inf, membangun retrieval text dan embedding
+historical failure, lalu mencatat checksum, sample checksum, urutan stable ID, dtype, dimensi,
+metric, normalisasi, dan model revision dalam `artifact-manifest.json`. Saat startup API hanya
+memeriksa manifest dan sample terversi agar tidak menggandakan array atau melakukan full scan.
+Readiness tetap `503` sampai artifact dan model telah tervalidasi.
+
+Model sumber notebook harus diaudit sebelum dipakai: pin revision yang immutable dan jangan
+mengaktifkan remote custom code. Jalankan benchmark terpisah sebelum memilih FAISS/HNSW; pencatatan
+benchmark harus memisahkan waktu load, encode, dan search tanpa menyimpan teks keputusan lengkap.
 
 ## Kualitas kode
 
