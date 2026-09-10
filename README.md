@@ -22,18 +22,27 @@ Interactive documentation is available at `http://127.0.0.1:8000/docs`; the raw 
 origin. Change `FRONTEND_ORIGINS` in `.env` to allow other origins, using comma-separated values.
 The entry point reads `APP_HOST`, `APP_PORT`, and `APP_ENV`; `APP_ENV=development` enables reload.
 
-## Bootstrap endpoints
+## API endpoints
 
 - `GET /health/live` — confirms that the HTTP process is alive.
 - `GET /health/ready` — confirms that application dependencies are ready.
 - `POST /api/v1/analyses` — creates an analysis job with `queued` status.
-- `GET /api/v1/analyses/{id}` — reads the current temporary job status.
+- `GET /api/v1/analyses/{id}` — reads the current persisted job status or result.
+- `GET /api/v1/analyses?limit=20&cursor=...` — lists compact newest-first job history.
 
-Jobs are currently kept in memory to validate the API contract. Persistent storage and a background
-worker will replace this implementation.
+Jobs are persisted in SQLite or PostgreSQL through SQLAlchemy and run through FastAPI
+`BackgroundTasks`. This is a single-process MVP: do not run multiple API workers until an external
+task queue is introduced. A process restart marks any job left in `processing` as failed with
+`WORKER_INTERRUPTED`, so polling clients never wait indefinitely.
 
-`/health/live` only checks the HTTP process. `/health/ready` returns HTTP `200` when ready, or HTTP
-`503` with a local check summary when a dependency is not ready.
+`MAX_CONCURRENT_ANALYSES` controls in-process worker concurrency (default `1`) and
+`MAX_QUEUED_ANALYSES` caps waiting jobs (default `10`). A full queue returns HTTP `503` with
+`CAPACITY_EXCEEDED` and a `Retry-After` header; no job row is created. The frontend should disable
+repeated submits while its create request is active.
+
+`/health/live` only checks the HTTP process. `/health/ready` returns HTTP `200` only after database
+migrations, artifacts, and the embedding model are ready; otherwise it returns HTTP `503` with a
+local check summary.
 
 `financialInputs` is optional. When provided, every field is required; `monthlyOrders` is an integer
 and monetary values are bounded to keep later calculations safe. Monetary values are unit-agnostic,
@@ -86,9 +95,10 @@ Before using the worker or cache with a new database, run this from the backend 
 uv run alembic upgrade head
 ```
 
-The initial migration creates only `llm_cache`; analysis tables will use the same SQLAlchemy and
-Alembic foundation. `DATABASE_URL` may use SQLite for the MVP. Do not commit a local database file
-or cache contents to Git.
+Migrations create `llm_cache` and `analyses`, including stable history indexes. SQLite connections
+use WAL mode and `SQLITE_BUSY_TIMEOUT_MS` (default `5000`) to improve concurrent read/write behavior
+for the demo. `DATABASE_URL` may use SQLite for the MVP. Do not commit a local database file or cache
+contents to Git.
 
 ## Configuration
 

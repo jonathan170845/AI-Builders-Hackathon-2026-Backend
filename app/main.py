@@ -14,10 +14,14 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.api.routes import analyses, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
+from app.db.analyses import AnalysisRepository
 from app.db.cache import LLMCache
 from app.db.session import create_engine_and_session_factory
 from app.schemas.errors import ErrorDetail, ErrorResponse
 from app.services.artifacts import ArtifactValidationError, DataArtifacts, load_data_artifacts
+from app.services.jobs import AnalysisJobService
+from app.services.llm import CachedLLMClient, OpenRouterLLMClient
+from app.services.pipeline import AnalysisPipeline, PipelineError
 from app.services.retrieval import RetrievalError, RetrievalService, SentenceTransformerEncoder
 
 MAX_REQUEST_BODY_BYTES = 64 * 1024
@@ -32,10 +36,16 @@ HTTP_ERROR_CODES = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings: Settings = app.state.settings
-    app.state.analyses = {}
     # Pass this process-wide semaphore to every OpenRouter client created by a worker.
     app.state.llm_provider_semaphore = asyncio.Semaphore(settings.llm_global_concurrency)
-    engine, session_factory = create_engine_and_session_factory(settings.database_url)
+    app.state.llm_provider = None
+    if settings.openrouter_api_key and settings.openrouter_model:
+        app.state.llm_provider = OpenRouterLLMClient(
+            settings, semaphore=app.state.llm_provider_semaphore
+        )
+    engine, session_factory = create_engine_and_session_factory(
+        settings.database_url, sqlite_busy_timeout_ms=settings.sqlite_busy_timeout_ms
+    )
     app.state.db_engine = engine
     app.state.db_session_factory = session_factory
     app.state.llm_cache = (
@@ -47,20 +57,52 @@ async def lifespan(app: FastAPI):
         if settings.llm_cache_enabled
         else None
     )
+    repository = AnalysisRepository(session_factory)
+    app.state.database_ready = False
+    app.state.analysis_jobs = AnalysisJobService(
+        repository,
+        _pipeline_factory(app),
+        pipeline_version=settings.analysis_pipeline_version,
+        max_concurrent=settings.max_concurrent_analyses,
+        max_queued=settings.max_queued_analyses,
+    )
+    try:
+        app.state.analysis_jobs.reconcile_interrupted()
+        app.state.database_ready = True
+    except Exception:  # Database migrations may not have been applied yet.
+        app.state.database_ready = False
     app.state.data_artifacts = None
     app.state.retrieval_service = None
     try:
         artifacts, retrieval_service = initialize_retrieval(settings)
         app.state.data_artifacts = artifacts
         app.state.retrieval_service = retrieval_service
-        app.state.readiness_checks = {"artifacts": "ready", "embedding_model": "ready"}
+        app.state.readiness_checks = {
+            "database": "ready" if app.state.database_ready else "not_ready",
+            "artifacts": "ready",
+            "embedding_model": "ready",
+        }
     except ArtifactValidationError:
-        app.state.readiness_checks = {"artifacts": "not_ready", "embedding_model": "not_ready"}
+        app.state.readiness_checks = {
+            "database": "ready" if app.state.database_ready else "not_ready",
+            "artifacts": "not_ready",
+            "embedding_model": "not_ready",
+        }
     except RetrievalError:
-        app.state.readiness_checks = {"artifacts": "ready", "embedding_model": "not_ready"}
+        app.state.readiness_checks = {
+            "database": "ready" if app.state.database_ready else "not_ready",
+            "artifacts": "ready",
+            "embedding_model": "not_ready",
+        }
     yield
+    if app.state.llm_provider is not None:
+        await app.state.llm_provider.aclose()
     engine.dispose()
-    app.state.readiness_checks = {"artifacts": "not_ready", "embedding_model": "not_ready"}
+    app.state.readiness_checks = {
+        "database": "not_ready",
+        "artifacts": "not_ready",
+        "embedding_model": "not_ready",
+    }
 
 
 def initialize_retrieval(settings: Settings) -> tuple[DataArtifacts, RetrievalService]:
@@ -73,11 +115,50 @@ def initialize_retrieval(settings: Settings) -> tuple[DataArtifacts, RetrievalSe
     return artifacts, RetrievalService(artifacts, encoder, max_top_k=settings.retrieval_max_top_k)
 
 
-def error_response(*, status_code: int, code: str, message: str, request: Request) -> JSONResponse:
+def _pipeline_factory(app: FastAPI):
+    """Build fresh per-job pipeline state while retaining process-wide provider concurrency."""
+
+    def factory(report_stage):
+        settings: Settings = app.state.settings
+        provider = app.state.llm_provider
+        if provider is None:
+            raise PipelineError(
+                "LLM_NOT_CONFIGURED",
+                "extracting_assumptions",
+                "Analysis provider is not configured",
+                internal_message="OPENROUTER_API_KEY or OPENROUTER_MODEL is unset",
+            )
+        llm = (
+            CachedLLMClient(provider, app.state.llm_cache, prompt_version=settings.prompt_version)
+            if app.state.llm_cache is not None
+            else provider
+        )
+        artifacts = app.state.data_artifacts
+        return AnalysisPipeline(
+            llm,
+            settings,
+            retriever=app.state.retrieval_service,
+            idx_benchmark_rows=artifacts.idx_benchmark_overall if artifacts is not None else (),
+            report_stage=report_stage,
+        )
+
+    return factory
+
+
+def error_response(
+    *,
+    status_code: int,
+    code: str,
+    message: str,
+    request: Request,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
     request_id = getattr(request.state, "request_id", str(uuid4()))
     payload = ErrorResponse(error=ErrorDetail(code=code, message=message, request_id=request_id))
     response = JSONResponse(status_code=status_code, content=payload.model_dump(by_alias=True))
     response.headers["X-Request-ID"] = request_id
+    if headers:
+        response.headers.update(headers)
     return response
 
 
@@ -126,7 +207,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(ApiError)
     async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
         return error_response(
-            status_code=exc.status_code, code=exc.code, message=exc.message, request=request
+            status_code=exc.status_code,
+            code=exc.code,
+            message=exc.message,
+            request=request,
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)

@@ -233,6 +233,21 @@ class AnalysisFailed(ApiModel):
     error: AnalysisJobError
 
 
+class AnalysisHistoryItem(ApiModel):
+    id: AnalysisId
+    decision: str
+    status: AnalysisStatus
+    created_at: datetime
+    updated_at: datetime
+    assumption_count: int = Field(ge=0)
+    financial_warning_count: int = Field(ge=0)
+
+
+class AnalysisHistory(ApiModel):
+    items: list[AnalysisHistoryItem]
+    next_cursor: str | None
+
+
 AnalysisDetail = Annotated[
     AnalysisPending | AnalysisCompleted | AnalysisFailed,
     Field(discriminator="status"),

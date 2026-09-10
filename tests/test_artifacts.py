@@ -74,5 +74,9 @@ def test_missing_artifact_keeps_readiness_at_503_without_absolute_path(tmp_path)
         response = client.get("/health/ready")
 
     assert response.status_code == 503
-    assert response.json()["checks"] == {"artifacts": "not_ready", "embedding_model": "not_ready"}
+    assert response.json()["checks"] == {
+        "database": "not_ready",
+        "artifacts": "not_ready",
+        "embedding_model": "not_ready",
+    }
     assert str(tmp_path) not in response.text

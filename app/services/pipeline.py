@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+import asyncio
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -12,6 +13,7 @@ from uuid import UUID
 from app.core.config import Settings
 from app.schemas.analysis import (
     AnalysisResult,
+    AnalysisStage,
     AssessmentLevel,
     Assumption,
     CompanyAnalogue,
@@ -104,6 +106,7 @@ class AnalysisPipeline:
         *,
         retriever: AssumptionRetriever | None,
         idx_benchmark_rows: Iterable[Mapping[str, str]] = (),
+        report_stage: Callable[[AnalysisStage], Awaitable[None]] | None = None,
     ) -> None:
         self._llm = llm
         self._settings = settings
@@ -112,19 +115,26 @@ class AnalysisPipeline:
         self._calls = 0
         self._cached_calls = 0
         self._total_cost_usd = 0.0
+        self._report_stage = report_stage
 
     async def run(self, analysis_id: UUID, payload: CreateAnalysisRequest) -> PipelineRun:
         """Run all stages or fail closed; a partial report is never returned."""
+        await self._set_stage(AnalysisStage.EXTRACTING_ASSUMPTIONS)
         extracted = await self._extract(payload.decision)
+        await self._set_stage(AnalysisStage.RETRIEVING_EVIDENCE)
         queries = await self._build_queries(extracted)
-        evidence = self._retrieve(extracted, queries)
+        # SentenceTransformer/Numpy search is CPU-bound, so it must not block HTTP's event loop.
+        evidence = await asyncio.to_thread(self._retrieve, extracted, queries)
+        await self._set_stage(AnalysisStage.CALCULATING_FINANCIALS)
         financial = build_financial_evidence(
             payload.financial_inputs,
             self._idx_benchmark_rows,
             low_runway_months=Decimal(str(self._settings.financial_low_runway_months)),
         )
+        await self._set_stage(AnalysisStage.REVIEWING_EVIDENCE)
         evaluations = await self._evaluate(extracted, evidence)
         reviewed = await self._review(evaluations)
+        await self._set_stage(AnalysisStage.BUILDING_REPORT)
         result = self._build_result(
             analysis_id, payload.decision, extracted, evidence, reviewed, financial
         )
@@ -138,6 +148,10 @@ class AnalysisPipeline:
                 total_cost_usd=round(self._total_cost_usd, 8),
             ),
         )
+
+    async def _set_stage(self, stage: AnalysisStage) -> None:
+        if self._report_stage is not None:
+            await self._report_stage(stage)
 
     async def _extract(self, decision: str) -> tuple[ExtractedAssumption, ...]:
         response = await self._complete(

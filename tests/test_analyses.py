@@ -37,19 +37,16 @@ def test_create_analysis_returns_queued_job_and_location(client):
     assert response.headers["location"] == f"/api/v1/analyses/{body['id']}"
 
 
-def test_created_analysis_can_be_polled(client):
+def test_created_analysis_can_be_polled_after_worker_failure(client):
     created = client.post("/api/v1/analyses", json=VALID_PAYLOAD).json()
 
     response = client.get(f"/api/v1/analyses/{created['id']}")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "id": created["id"],
-        "status": "queued",
-        "stage": "queued",
-        "createdAt": created["createdAt"],
-        "updatedAt": created["createdAt"],
-    }
+    assert response.status_code == 200
+    assert response.json()["id"] == created["id"]
+    assert response.json()["status"] == "failed"
+    assert response.json()["error"]["code"] == "LLM_NOT_CONFIGURED"
 
 
 def test_unknown_analysis_uses_error_envelope(client):

@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     llm_cache_enabled: bool = True
     llm_cache_retention_days: int = Field(default=30, ge=1, le=365)
     llm_cache_max_rows: int = Field(default=10_000, ge=1, le=1_000_000)
+    analysis_pipeline_version: str = "2026-09-10.1"
+    max_concurrent_analyses: int = Field(default=1, ge=1, le=16)
+    max_queued_analyses: int = Field(default=10, ge=0, le=1_000)
+    analysis_retry_after_seconds: int = Field(default=5, ge=1, le=3_600)
+    sqlite_busy_timeout_ms: int = Field(default=5_000, ge=100, le=60_000)
     embedding_model_path_or_id: str | None = None
     retrieval_max_top_k: int = Field(default=10, ge=1, le=50)
     financial_low_runway_months: float = Field(default=6, ge=0, le=120)
