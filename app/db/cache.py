@@ -4,7 +4,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import LLMCacheEntry
@@ -42,6 +42,8 @@ class LLMCache:
         serialized = json.dumps(response, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         now = datetime.now(UTC)
         with self._session_factory.begin() as session:
+            if session.bind is not None and session.bind.dialect.name == "sqlite":
+                session.execute(text("BEGIN IMMEDIATE"))
             session.execute(delete(LLMCacheEntry).where(LLMCacheEntry.expires_at <= now))
             existing = session.get(LLMCacheEntry, cache_key)
             values = {

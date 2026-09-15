@@ -1,0 +1,16 @@
+.git
+.venv
+.env
+.env.*
+!.env.example
+__pycache__
+.pytest_cache
+.ruff_cache
+*.db*
+*.ipynb
+data
+prepared-data/*
+!prepared-data/startup-failure-metadata.json
+models
+.coverage
+htmlcov

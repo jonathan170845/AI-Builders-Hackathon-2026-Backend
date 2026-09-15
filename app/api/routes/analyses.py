@@ -38,6 +38,10 @@ async def create_analysis(
 ) -> AnalysisAccepted:
     """Persist a queued job, then schedule its single-process background execution."""
     jobs = _jobs_or_503(request)
+    if getattr(request.app.state, "retrieval_service", None) is None:
+        raise ApiError(
+            status_code=503, code="ARTIFACTS_NOT_READY", message="Evidence service is not ready"
+        )
     try:
         accepted = jobs.submit(payload)
     except CapacityExceededError as exc:

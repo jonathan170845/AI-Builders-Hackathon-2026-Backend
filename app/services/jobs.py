@@ -6,9 +6,11 @@ import asyncio
 import json
 import logging
 from collections.abc import Awaitable, Callable
+from dataclasses import asdict
 from typing import Protocol
 from uuid import UUID
 
+from app.core.logging import analysis_id_context
 from app.db.analyses import AnalysisRepository, CapacityExceededError
 from app.schemas.analysis import AnalysisAccepted, AnalysisStage, CreateAnalysisRequest
 from app.services.pipeline import AnalysisPipeline, PipelineError, PipelineRun
@@ -33,11 +35,13 @@ class AnalysisJobService:
         pipeline_version: str,
         max_concurrent: int,
         max_queued: int,
+        timeout_seconds: float = 600,
     ) -> None:
         self._repository = repository
         self._pipeline_factory = pipeline_factory
         self._pipeline_version = pipeline_version
         self._max_queued = max_queued
+        self._timeout_seconds = timeout_seconds
         self._semaphore = asyncio.Semaphore(max_concurrent)
 
     def submit(self, payload: CreateAnalysisRequest) -> AnalysisAccepted:
@@ -49,6 +53,13 @@ class AnalysisJobService:
         return AnalysisAccepted(id=record.id, created_at=record.created_at)
 
     async def run(self, analysis_id: UUID) -> None:
+        token = analysis_id_context.set(str(analysis_id))
+        try:
+            await self._run(analysis_id)
+        finally:
+            analysis_id_context.reset(token)
+
+    async def _run(self, analysis_id: UUID) -> None:
         """Run one job and turn every unexpected failure into a terminal public state."""
         async with self._semaphore:
             record = self._repository.start_if_queued(analysis_id)
@@ -63,11 +74,14 @@ class AnalysisJobService:
 
             try:
                 pipeline = self._pipeline_factory(report_stage)
-                completed: PipelineRun = await pipeline.run(
-                    analysis_id,
-                    _payload_from_record(record.decision, record.financial_inputs_json),
+                async with asyncio.timeout(self._timeout_seconds):
+                    completed: PipelineRun = await pipeline.run(
+                        analysis_id,
+                        _payload_from_record(record.decision, record.financial_inputs_json),
+                    )
+                self._repository.complete_if_processing(
+                    analysis_id, completed.result, asdict(completed.metadata)
                 )
-                self._repository.complete_if_processing(analysis_id, completed.result)
             except PipelineError as exc:
                 self._repository.fail_if_nonterminal(
                     analysis_id,
@@ -77,10 +91,13 @@ class AnalysisJobService:
                     stage=_stage_or_default(exc.stage, stage),
                 )
             except Exception as exc:  # noqa: BLE001 - this is the worker safety boundary
-                logger.exception("analysis worker failed", extra={"analysis_id": str(analysis_id)})
+                logger.error(
+                    "analysis worker failed",
+                    extra={"analysis_id": str(analysis_id), "error_code": type(exc).__name__},
+                )
                 self._repository.fail_if_nonterminal(
                     analysis_id,
-                    code="ANALYSIS_FAILED",
+                    code="ANALYSIS_TIMEOUT" if isinstance(exc, TimeoutError) else "ANALYSIS_FAILED",
                     message="Analysis could not be completed. Please try again.",
                     internal_error=f"{type(exc).__name__}: {exc}",
                     stage=stage,

@@ -1,0 +1,16 @@
+name: Backend checks
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.13"
+          python-version: "3.12"
+      - run: uv sync --extra dev --frozen
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen pytest --cov=app.services --cov=app.api --cov-report=term-missing --cov-fail-under=80
+      - run: uv run --frozen python scripts/export_contract.py --check
+      - run: docker build -t veritas-backend .

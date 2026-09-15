@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import math
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -137,7 +138,7 @@ def _read_manifest(data_dir: Path) -> dict[str, Any]:
         manifest = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ArtifactValidationError("Artifact manifest is invalid") from exc
-    if manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
+    if not isinstance(manifest, dict) or manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
         raise ArtifactValidationError("Artifact manifest schema version is unsupported")
     if not isinstance(manifest.get("artifacts"), dict):
         raise ArtifactValidationError("Artifact manifest does not describe artifacts")
@@ -171,7 +172,10 @@ def _as_optional_float(value: str | None) -> float | None:
     if value is None:
         return None
     try:
-        return float(value)
+        number = float(value)
+        if not math.isfinite(number):
+            raise ValueError("non-finite metadata value")
+        return number
     except ValueError as exc:
         raise ArtifactValidationError("Company metadata contains an invalid numeric value") from exc
 
@@ -290,7 +294,9 @@ def _load_embeddings(path: Path, label: str) -> NDArray[np.floating[Any]]:
     sample = embeddings[
         np.linspace(0, embeddings.shape[0] - 1, min(32, embeddings.shape[0]), dtype=int)
     ]
-    if not np.isfinite(sample).all():
+    if not np.isfinite(sample).all() or not np.allclose(
+        np.linalg.norm(sample, axis=1), 1, atol=1e-4
+    ):
         raise ArtifactValidationError(f"{label} embeddings contain invalid values")
     return embeddings
 

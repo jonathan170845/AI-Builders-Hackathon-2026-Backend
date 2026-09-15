@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 from dataclasses import dataclass
-from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal, InvalidOperation
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal, InvalidOperation, localcontext
 
 from app.schemas.analysis import FinancialInputs, FinancialWarningCode, IdxBenchmark
 
@@ -33,6 +33,7 @@ class FinancialStressTest:
     monthly_burn: Decimal
     runway_months: Decimal | None
     break_even_orders: int | None
+    revenue_per_order: Decimal
     net_revenue_per_order: Decimal
     contribution_margin_per_order: Decimal
     warnings: tuple[FinancialWarningCode, ...]
@@ -61,6 +62,14 @@ class FinancialEvidence:
 
 
 def run_financial_stress_test(
+    inputs: FinancialInputs, *, low_runway_months: Decimal = DEFAULT_LOW_RUNWAY_MONTHS
+) -> FinancialStressTest:
+    with localcontext() as context:
+        context.prec = 50
+        return _calculate_financial_stress_test(inputs, low_runway_months=low_runway_months)
+
+
+def _calculate_financial_stress_test(
     inputs: FinancialInputs,
     *,
     low_runway_months: Decimal = DEFAULT_LOW_RUNWAY_MONTHS,
@@ -84,8 +93,14 @@ def run_financial_stress_test(
     cash_balance = _decimal_from_input(inputs.cash_balance)
 
     net_revenue_per_order = revenue_per_order - promo_subsidy
-    variable_cost_per_order_total = variable_cost_per_order + delivery_cost
-    contribution_margin_per_order = net_revenue_per_order - variable_cost_per_order_total
+
+    contribution_margin_per_order = (
+        revenue_per_order
+        - variable_cost_per_order
+        - promo_subsidy
+        - delivery_cost
+    )
+
     contribution_margin = contribution_margin_per_order * monthly_orders
     operating_profit = contribution_margin - fixed_cost - driver_cost
     monthly_burn = -operating_profit if operating_profit < 0 else Decimal("0")
@@ -100,8 +115,8 @@ def run_financial_stress_test(
         else None
     )
     contribution_margin_pct = (
-        contribution_margin_per_order / net_revenue_per_order * Decimal("100")
-        if net_revenue_per_order > 0
+        contribution_margin_per_order / revenue_per_order * Decimal("100")
+        if revenue_per_order > 0
         else Decimal("0")
     )
 
@@ -124,6 +139,7 @@ def run_financial_stress_test(
         monthly_burn=monthly_burn,
         runway_months=runway_months,
         break_even_orders=break_even_orders,
+        revenue_per_order=revenue_per_order,
         net_revenue_per_order=net_revenue_per_order,
         contribution_margin_per_order=contribution_margin_per_order,
         warnings=tuple(warnings),
@@ -160,7 +176,7 @@ def benchmark_against_idx(
     so this deliberately returns no invented comparison for them.  A non-positive
     net revenue also has no meaningful gross-margin analogue.
     """
-    if stress_test.net_revenue_per_order <= 0:
+    if stress_test.revenue_per_order <= 0:
         return ()
 
     rows = [row for row in benchmark_rows if row.get("ratio") == "gross_margin"]
@@ -177,7 +193,10 @@ def benchmark_against_idx(
     if sample_size <= 0 or not p25 <= median <= p75:
         return ()
 
-    margin_ratio = stress_test.contribution_margin_per_order / stress_test.net_revenue_per_order
+    margin_ratio = (
+        stress_test.contribution_margin_per_order
+        / stress_test.revenue_per_order
+    )
     if margin_ratio < p25:
         position = "Below Benchmark"
     elif margin_ratio <= p75:
@@ -217,7 +236,9 @@ def _decimal_from_text(value: str) -> Decimal:
 
 
 def _money_to_float(value: Decimal) -> float:
-    return _finite_float(value.quantize(MONEY_PLACES, rounding=ROUND_HALF_UP))
+    with localcontext() as context:
+        context.prec = max(50, len(value.as_tuple().digits) + 10)
+        return _finite_float(value.quantize(MONEY_PLACES, rounding=ROUND_HALF_UP))
 
 
 def _percentage_to_float(value: Decimal) -> float:

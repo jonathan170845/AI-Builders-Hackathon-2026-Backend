@@ -22,6 +22,7 @@ from app.services.artifacts import (
     build_failure_retrieval_text,
     ordered_values_sha256,
 )
+from app.services.model_identity import local_model_fingerprint
 from app.services.retrieval import SentenceTransformerEncoder
 
 SOURCE_FILENAMES = (
@@ -42,7 +43,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model-id", required=True, help="Audited immutable model ID recorded in manifest"
     )
-    parser.add_argument("--model-revision", required=True, help="Audited immutable model revision")
+    parser.add_argument(
+        "--model-revision",
+        help="Verified upstream commit; omit for a local content-fingerprinted model",
+    )
     return parser.parse_args()
 
 
@@ -63,7 +67,10 @@ def full_embedding_validation(path: Path, label: str) -> tuple[int, int, str]:
     if array.ndim != 2 or not np.issubdtype(array.dtype, np.floating):
         raise ValueError(f"{label} must be a two-dimensional floating-point array")
     for start in range(0, array.shape[0], 8192):
-        if not np.isfinite(array[start : start + 8192]).all():
+        block = array[start : start + 8192]
+        if not np.isfinite(block).all() or not np.allclose(
+            np.linalg.norm(block, axis=1), 1, atol=1e-4
+        ):
             raise ValueError(f"{label} contains NaN or Infinity")
     return int(array.shape[0]), int(array.shape[1]), str(array.dtype)
 
@@ -90,10 +97,26 @@ def company_ids(path: Path) -> list[str]:
     return ids
 
 
+def verify_company_alignment(metadata_path, embeddings_path, encoder):
+    embeddings = np.load(embeddings_path, mmap_mode="r", allow_pickle=False)
+    indices = np.linspace(0, embeddings.shape[0] - 1, min(32, embeddings.shape[0]), dtype=int)
+    wanted = set(indices.tolist())
+    with metadata_path.open(newline="", encoding="utf-8") as source:
+        texts = [
+            row["retrieval_text"] for i, row in enumerate(csv.DictReader(source)) if i in wanted
+        ]
+    recomputed = encoder.encode(texts)
+    scores = np.sum(recomputed * embeddings[indices], axis=1)
+    if not np.all(scores >= 0.999):
+        raise SystemExit("Company embedding samples do not match this model and metadata ordering")
+
+
 def main() -> None:
     args = parse_args()
     source_dir = args.source_dir.resolve()
-    output_dir = (args.output_dir or args.source_dir).resolve()
+    output_dir = (args.output_dir or Path("prepared-data")).resolve()
+    if output_dir == source_dir:
+        raise SystemExit("Choose a separate output directory to preserve source artifacts")
     output_dir.mkdir(parents=True, exist_ok=True)
     source_paths = {filename: source_dir / filename for filename in SOURCE_FILENAMES}
     missing = [filename for filename, path in source_paths.items() if not path.is_file()]
@@ -114,9 +137,20 @@ def main() -> None:
         json.dumps(documents, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
     )
 
+    model_path = Path(args.model)
+    if not model_path.is_dir():
+        raise SystemExit(
+            "Use a complete local model directory; preparation does not download models"
+        )
+    model_hash = local_model_fingerprint(model_path)
     encoder = SentenceTransformerEncoder(str(args.model), args.model_revision)
     if encoder.dimension() != dimension:
         raise SystemExit("Embedding model dimension does not match company embeddings")
+    verify_company_alignment(
+        copied["software_it_candidate_metadata.csv"],
+        copied["software_it_candidate_embeddings.npy"],
+        encoder,
+    )
     failure_vectors = np.asarray(
         encoder.encode([document["retrieval_text"] for document in documents])
     )
@@ -138,6 +172,8 @@ def main() -> None:
         "embedding_model": {
             "id": args.model_id,
             "revision": args.model_revision,
+            "local_sha256": model_hash,
+            "identity": "local-sha256:" + model_hash,
             "dimension": dimension,
             "metric": "dot_product",
             "normalization": "l2",

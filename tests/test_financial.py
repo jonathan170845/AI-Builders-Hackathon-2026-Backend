@@ -32,7 +32,7 @@ def test_golden_financial_stress_test_matches_documented_formula():
 
     assert stress_test.to_api_result() == {
         "contribution_margin": -3_000_000.0,
-        "contribution_margin_pct": -7.5,
+        "contribution_margin_pct": -6.0,
         "operating_profit": -11_000_000.0,
         "monthly_burn": 11_000_000.0,
         "runway_months": 45.4545,
@@ -92,7 +92,10 @@ def test_golden_financial_stress_test_matches_documented_formula():
 def test_financial_edge_cases(overrides, expected):
     stress_test = run_financial_stress_test(make_inputs(**overrides))
 
-    assert stress_test.runway_months == expected["runway_months"]
+    if expected["runway_months"] is None:
+        assert stress_test.runway_months is None
+    else:
+        assert abs(stress_test.runway_months - expected["runway_months"]) < Decimal("1e-24")
     assert stress_test.break_even_orders == expected["break_even_orders"]
     assert all(
         value is None or isinstance(value, (float, int))
@@ -161,3 +164,27 @@ def test_missing_financial_inputs_returns_explicitly_empty_financial_evidence():
     assert evidence.financial_results is None
     assert evidence.financial_warnings == ()
     assert evidence.idx_benchmarks == ()
+
+
+def test_financial_margin_uses_gross_revenue_as_denominator():
+    stress_test = run_financial_stress_test(
+        make_inputs(
+            monthly_orders=3600,
+            revenue_per_order=25,
+            variable_cost_per_order=10,
+            promo_subsidy=3,
+            delivery_cost=2,
+            fixed_cost=18000,
+            driver_cost=0,
+            cash_balance=90000,
+        )
+    )
+
+    result = stress_test.to_api_result()
+
+    assert result["contribution_margin"] == 36000.0
+    assert result["contribution_margin_pct"] == 40.0
+    assert result["operating_profit"] == 18000.0
+    assert result["monthly_burn"] == 0.0
+    assert result["runway_months"] is None
+    assert result["break_even_orders"] == 1800

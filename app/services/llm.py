@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import math
 import random
 import re
 import time
@@ -83,10 +84,13 @@ class OpenRouterLLMClient:
         self._max_tokens = settings.llm_max_tokens
         self._max_response_bytes = settings.llm_max_response_bytes
         self._temperature = settings.llm_temperature
+        self._response_format = settings.llm_response_format
         self.cache_key_inputs: Mapping[str, Any] = {
             "temperature": self._temperature,
             "max_tokens": self._max_tokens,
+            "response_format": self._response_format,
         }
+        self._total_timeout = settings.llm_total_timeout_seconds
         self._timeout = httpx.Timeout(
             settings.llm_total_timeout_seconds,
             connect=settings.llm_connect_timeout_seconds,
@@ -110,26 +114,52 @@ class OpenRouterLLMClient:
         request = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": system_prompt},
+                {
+                    "role": "system",
+                    "content": system_prompt
+                    + "\nReturn exactly ONE populated JSON data object. Do not repeat the schema, "
+                    + "include markdown fences, explanations, or multiple objects."
+                    + "\n<response_schema>\n"
+                    + json.dumps(response_model.model_json_schema(), sort_keys=True)
+                    + "\n</response_schema>\nReturn the DATA only, never the schema.",
+                },
                 {
                     "role": "user",
                     "content": json.dumps(user_payload, ensure_ascii=False, sort_keys=True),
                 },
             ],
-            "response_format": {"type": "json_object"},
             "temperature": self._temperature,
             "max_tokens": self._max_tokens,
         }
+        if self._response_format == "json_object":
+            request["response_format"] = {"type": "json_object"}
         for attempt in range(self._max_retries + 1):
             started = time.perf_counter()
             try:
-                async with self._semaphore:
-                    response = await self._client.post(
+                async with asyncio.timeout(self._total_timeout), self._semaphore:
+                    async with self._client.stream(
+                        "POST",
                         f"{self._base_url}/chat/completions",
                         headers={"Authorization": f"Bearer {self._api_key}"},
                         json=request,
                         timeout=self._timeout,
-                    )
+                    ) as incoming:
+                        content = bytearray()
+                        async for chunk in incoming.aiter_bytes():
+                            if len(content) + len(chunk) > self._max_response_bytes:
+                                raise LLMError(
+                                    "LLM_RESPONSE_TOO_LARGE", "Provider response is too large"
+                                )
+                            content.extend(chunk)
+                        response = httpx.Response(
+                            incoming.status_code,
+                            headers={
+                                key: value
+                                for key, value in incoming.headers.items()
+                                if key.lower() not in {"content-encoding", "content-length"}
+                            },
+                            content=bytes(content),
+                        )
                 completion = self._parse_response(response, response_model)
                 logger.info(
                     "llm_completion model=%s attempt=%d status=%d latency_ms=%d "
@@ -142,7 +172,7 @@ class OpenRouterLLMClient:
                     completion.output_tokens,
                 )
                 return completion
-            except (httpx.TimeoutException, httpx.NetworkError) as exc:
+            except (TimeoutError, httpx.TimeoutException, httpx.NetworkError) as exc:
                 error = LLMError(
                     "LLM_PROVIDER_UNAVAILABLE", "LLM provider is unavailable", retryable=True
                 )
@@ -187,6 +217,8 @@ class OpenRouterLLMClient:
             )
         try:
             body = response.json()
+            if body["choices"][0].get("finish_reason") == "length":
+                raise LLMError("LLM_OUTPUT_TRUNCATED", "Provider exhausted its output token budget")
             content = body["choices"][0]["message"]["content"]
             if not isinstance(content, str):
                 raise TypeError("content is not text")
@@ -236,14 +268,16 @@ class CachedLLMClient:
             system_prompt=system_prompt,
             user_payload=user_payload,
             sampling=getattr(self._client, "cache_key_inputs", {}),
-            response_schema=response_model.__name__,
+            response_schema=json.dumps(response_model.model_json_schema(), sort_keys=True),
         )
         if self._cache is not None:
             cached = self._cache.get(key)
             if cached is not None:
+                logger.info("llm_cache_hit")
                 completion = LLMCompletion(payload=cached, model=self.model, cached=True)
                 completion.parse(response_model)
                 return completion
+        logger.info("llm_cache_miss")
         completion = await self._client.complete_json(
             system_prompt=system_prompt, user_payload=user_payload, response_model=response_model
         )
@@ -297,4 +331,11 @@ def _optional_int(value: object) -> int | None:
 
 
 def _optional_float(value: object) -> float | None:
-    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+    return (
+        float(value)
+        if isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value >= 0
+        else None
+    )

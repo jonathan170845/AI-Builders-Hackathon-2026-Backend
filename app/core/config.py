@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -29,18 +29,20 @@ class Settings(BaseSettings):
     llm_total_timeout_seconds: float = Field(default=60, gt=0, le=360)
     llm_max_retries: int = Field(default=2, ge=0, le=5)
     llm_global_concurrency: int = Field(default=8, ge=1, le=100)
-    llm_calls_per_analysis: int = Field(default=16, ge=1, le=100)
+    llm_calls_per_analysis: int = Field(default=20,ge=1,le=100)
     llm_max_tokens: int = Field(default=1_200, ge=32, le=16_384)
     llm_max_response_bytes: int = Field(default=262_144, ge=1_024, le=2_000_000)
     llm_max_cost_usd_per_analysis: float = Field(default=1.0, gt=0, le=100)
+    llm_response_format: Literal["json_object", "text"] = "json_object"
     llm_temperature: float = Field(default=0.0, ge=0, le=2)
-    prompt_version: str = "2026-09-10.1"
+    prompt_version: str = "2026-09-11.2"
     llm_cache_enabled: bool = True
     llm_cache_retention_days: int = Field(default=30, ge=1, le=365)
     llm_cache_max_rows: int = Field(default=10_000, ge=1, le=1_000_000)
     analysis_pipeline_version: str = "2026-09-10.1"
     max_concurrent_analyses: int = Field(default=1, ge=1, le=16)
-    max_queued_analyses: int = Field(default=10, ge=0, le=1_000)
+    max_queued_analyses: int = Field(default=10, ge=1, le=1_000)
+    analysis_timeout_seconds: float = Field(default=600, gt=0, le=3600)
     analysis_retry_after_seconds: int = Field(default=5, ge=1, le=3_600)
     sqlite_busy_timeout_ms: int = Field(default=5_000, ge=100, le=60_000)
     embedding_model_path_or_id: str | None = None

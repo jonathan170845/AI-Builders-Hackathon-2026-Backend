@@ -17,6 +17,7 @@ class ApiModel(BaseModel):
         populate_by_name=True,
         extra="forbid",
         allow_inf_nan=False,
+        json_schema_serialization_defaults_required=True,
     )
 
 
@@ -129,6 +130,22 @@ AssessmentLevel = Literal[
     "Insufficient Evidence", "Partially Supported", "Well Supported", "Contradicted"
 ]
 
+EvidenceDirection = Literal[
+    "supports",
+    "contradicts",
+    "mixed",
+    "neutral",
+]
+
+
+class EvidenceStrengthBreakdown(ApiModel):
+    directness: float = Field(ge=0.0, le=2.0)
+    decision_specificity: float = Field(ge=0.0, le=2.0)
+    observed_evidence: float = Field(ge=0.0, le=2.0)
+    comparability: float = Field(ge=0.0, le=1.5)
+    coverage: float = Field(ge=0.0, le=1.5)
+    source_quality: float = Field(ge=0.0, le=1.0)
+
 
 class FinancialWarningCode(StrEnum):
     NEGATIVE_CONTRIBUTION_MARGIN = "NEGATIVE_CONTRIBUTION_MARGIN"
@@ -141,10 +158,33 @@ class FinancialWarningCode(StrEnum):
 class Assumption(ApiModel):
     id: str
     text: str
+
     assessment: AssessmentLevel
     summary: str
+
+    evidence_strength_score: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=10.0,
+    )
+
+    evidence_direction: EvidenceDirection | None = None
+
+    score_breakdown: EvidenceStrengthBreakdown | None = None
+
+    user_evidence_found: bool = False
+
+    score_reasoning: list[str] = Field(
+        default_factory=list
+    )
+
     evidence_gaps: list[str]
+
     validation_experiment: str
+
+    evidence_refs: list[str] = Field(
+        default_factory=list
+    )
 
 
 class FailureMechanism(ApiModel):

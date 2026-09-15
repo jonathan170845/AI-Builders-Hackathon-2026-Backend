@@ -70,6 +70,7 @@ class AnalysisRecord(Base):
     public_error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     internal_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     pipeline_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    pipeline_metadata_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     assumption_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     financial_warning_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

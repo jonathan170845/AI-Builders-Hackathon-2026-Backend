@@ -1,0 +1,39 @@
+services:
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: sqlite:////state/veritas.db
+    volumes:
+      - state:/state
+  backend:
+    build: .
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: production
+      APP_HOST: 0.0.0.0
+      DATA_DIR: /data
+      EMBEDDING_MODEL_PATH_OR_ID: /model
+      DATABASE_URL: sqlite:////state/veritas.db
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-1200}
+      LLM_RESPONSE_FORMAT: ${LLM_RESPONSE_FORMAT:-json_object}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      FRONTEND_ORIGINS: http://localhost:8080
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - state:/state
+      - ${PREPARED_DATA_DIR:-./prepared-data}:/data:ro
+      - ${LOCAL_MODEL_DIR:?Set LOCAL_MODEL_DIR to the verified local model}:/model:ro
+  frontend:
+    build: ../AI-Builders-Hackathon-2026-Frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+volumes:
+  state:

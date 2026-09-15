@@ -10,3 +10,7 @@ htmlcov/
 *.sqlite3
 # Prepared datasets can be large and may have redistribution restrictions.
 prepared-data/
+
+.coverage
+*.db-wal
+*.db-shm

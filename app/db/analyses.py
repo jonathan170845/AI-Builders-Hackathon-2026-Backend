@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import Select, and_, func, or_, select, text, update
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, load_only, sessionmaker
 
 from app.db.models import AnalysisRecord
 from app.schemas.analysis import (
@@ -123,7 +123,17 @@ class AnalysisRepository:
         )
 
     def list_history(self, *, limit: int, cursor: str | None) -> AnalysisHistory:
-        statement: Select[tuple[AnalysisRecord]] = select(AnalysisRecord)
+        statement: Select[tuple[AnalysisRecord]] = select(AnalysisRecord).options(
+            load_only(
+                AnalysisRecord.id,
+                AnalysisRecord.decision,
+                AnalysisRecord.status,
+                AnalysisRecord.created_at,
+                AnalysisRecord.updated_at,
+                AnalysisRecord.assumption_count,
+                AnalysisRecord.financial_warning_count,
+            )
+        )
         if cursor is not None:
             created_at, analysis_id = decode_cursor(cursor)
             # SQLite stores DateTime without timezone metadata; comparing the same UTC instant
@@ -193,7 +203,9 @@ class AnalysisRepository:
             )
             return result.rowcount == 1
 
-    def complete_if_processing(self, analysis_id: UUID, result: AnalysisResult) -> bool:
+    def complete_if_processing(
+        self, analysis_id: UUID, result: AnalysisResult, metadata: dict | None = None
+    ) -> bool:
         now = datetime.now(UTC)
         with self._session_factory.begin() as session:
             update_result = session.execute(
@@ -206,6 +218,7 @@ class AnalysisRepository:
                     status=AnalysisStatus.COMPLETED,
                     stage=None,
                     result_json=result.model_dump_json(by_alias=True),
+                    pipeline_metadata_json=json.dumps(metadata) if metadata is not None else None,
                     assumption_count=result.assumption_count,
                     financial_warning_count=result.financial_warning_count,
                     completed_at=now,
@@ -249,7 +262,9 @@ class AnalysisRepository:
         with self._session_factory.begin() as session:
             update_result = session.execute(
                 update(AnalysisRecord)
-                .where(AnalysisRecord.status == AnalysisStatus.PROCESSING)
+                .where(
+                    AnalysisRecord.status.in_([AnalysisStatus.QUEUED, AnalysisStatus.PROCESSING])
+                )
                 .values(
                     status=AnalysisStatus.FAILED,
                     public_error_code="WORKER_INTERRUPTED",

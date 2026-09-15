@@ -1,0 +1,1285 @@
+{
+  "components": {
+    "schemas": {
+      "AnalysisAccepted": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "const": "queued",
+            "default": "queued",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "createdAt"
+        ],
+        "title": "AnalysisAccepted",
+        "type": "object"
+      },
+      "AnalysisCompleted": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/AnalysisResult"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "null"
+          },
+          "status": {
+            "const": "completed",
+            "default": "completed",
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "stage",
+          "createdAt",
+          "updatedAt",
+          "result"
+        ],
+        "title": "AnalysisCompleted",
+        "type": "object"
+      },
+      "AnalysisFailed": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/AnalysisJobError"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/AnalysisStage"
+          },
+          "status": {
+            "const": "failed",
+            "default": "failed",
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "stage",
+          "createdAt",
+          "updatedAt",
+          "error"
+        ],
+        "title": "AnalysisFailed",
+        "type": "object"
+      },
+      "AnalysisHistory": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisHistoryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextcursor"
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "title": "AnalysisHistory",
+        "type": "object"
+      },
+      "AnalysisHistoryItem": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptionCount": {
+            "minimum": 0.0,
+            "title": "Assumptioncount",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "financialWarningCount": {
+            "minimum": 0.0,
+            "title": "Financialwarningcount",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AnalysisStatus"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "decision",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "assumptionCount",
+          "financialWarningCount"
+        ],
+        "title": "AnalysisHistoryItem",
+        "type": "object"
+      },
+      "AnalysisJobError": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "AnalysisJobError",
+        "type": "object"
+      },
+      "AnalysisPending": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/AnalysisStage"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "processing"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "stage",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "AnalysisPending",
+        "type": "object"
+      },
+      "AnalysisResult": {
+        "additionalProperties": false,
+        "properties": {
+          "assumptionCount": {
+            "title": "Assumptioncount",
+            "type": "integer"
+          },
+          "assumptions": {
+            "items": {
+              "$ref": "#/components/schemas/Assumption"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "companyAnalogues": {
+            "items": {
+              "$ref": "#/components/schemas/CompanyAnalogue"
+            },
+            "title": "Companyanalogues",
+            "type": "array"
+          },
+          "date": {
+            "title": "Date",
+            "type": "string"
+          },
+          "decisionTitle": {
+            "title": "Decisiontitle",
+            "type": "string"
+          },
+          "directEvidenceCoverage": {
+            "title": "Directevidencecoverage",
+            "type": "string"
+          },
+          "failureMechanisms": {
+            "items": {
+              "$ref": "#/components/schemas/FailureMechanism"
+            },
+            "title": "Failuremechanisms",
+            "type": "array"
+          },
+          "financialResults": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialResults"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "financialWarningCount": {
+            "title": "Financialwarningcount",
+            "type": "integer"
+          },
+          "financialWarnings": {
+            "items": {
+              "$ref": "#/components/schemas/FinancialWarningCode"
+            },
+            "title": "Financialwarnings",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "idxBenchmarks": {
+            "items": {
+              "$ref": "#/components/schemas/IdxBenchmark"
+            },
+            "title": "Idxbenchmarks",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceItem"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "validationExperiments": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationExperiment"
+            },
+            "title": "Validationexperiments",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "decisionTitle",
+          "summary",
+          "assumptions",
+          "directEvidenceCoverage",
+          "financialWarnings",
+          "financialResults",
+          "failureMechanisms",
+          "companyAnalogues",
+          "validationExperiments",
+          "idxBenchmarks",
+          "sources",
+          "date",
+          "assumptionCount",
+          "financialWarningCount"
+        ],
+        "title": "AnalysisResult",
+        "type": "object"
+      },
+      "AnalysisStage": {
+        "enum": [
+          "queued",
+          "extracting_assumptions",
+          "retrieving_evidence",
+          "calculating_financials",
+          "reviewing_evidence",
+          "building_report"
+        ],
+        "title": "AnalysisStage",
+        "type": "string"
+      },
+      "AnalysisStatus": {
+        "enum": [
+          "queued",
+          "processing",
+          "completed",
+          "failed"
+        ],
+        "title": "AnalysisStatus",
+        "type": "string"
+      },
+      "Assumption": {
+        "additionalProperties": false,
+        "properties": {
+          "assessment": {
+            "enum": [
+              "Insufficient Evidence",
+              "Partially Supported",
+              "Well Supported",
+              "Contradicted"
+            ],
+            "title": "Assessment",
+            "type": "string"
+          },
+          "evidenceGaps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidencegaps",
+            "type": "array"
+          },
+          "evidenceRefs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Evidencerefs",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "validationExperiment": {
+            "title": "Validationexperiment",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "assessment",
+          "summary",
+          "evidenceGaps",
+          "validationExperiment",
+          "evidenceRefs"
+        ],
+        "title": "Assumption",
+        "type": "object"
+      },
+      "CompanyAnalogue": {
+        "additionalProperties": false,
+        "properties": {
+          "context": {
+            "title": "Context",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "enum": [
+                  "Failed",
+                  "Pivoted",
+                  "Succeeded"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "relevance": {
+            "title": "Relevance",
+            "type": "string"
+          },
+          "yearRange": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yearrange"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "context",
+          "outcome",
+          "yearRange",
+          "relevance"
+        ],
+        "title": "CompanyAnalogue",
+        "type": "object"
+      },
+      "CreateAnalysisRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "examples": [
+              "Scale on-demand grocery delivery to 5 new cities"
+            ],
+            "maxLength": 5000,
+            "minLength": 10,
+            "title": "Decision",
+            "type": "string"
+          },
+          "financialInputs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinancialInputs"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              {
+                "cashBalance": 500000000,
+                "deliveryCost": 8,
+                "driverCost": 3000000,
+                "fixedCost": 5000000,
+                "monthlyOrders": 1000000,
+                "promoSubsidy": 10,
+                "revenuePerOrder": 50,
+                "variableCostPerOrder": 35
+              }
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "CreateAnalysisRequest",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FailureMechanism": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "source",
+          "year"
+        ],
+        "title": "FailureMechanism",
+        "type": "object"
+      },
+      "FinancialInputs": {
+        "additionalProperties": false,
+        "properties": {
+          "cashBalance": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Cashbalance",
+            "type": "number"
+          },
+          "deliveryCost": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Deliverycost",
+            "type": "number"
+          },
+          "driverCost": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Drivercost",
+            "type": "number"
+          },
+          "fixedCost": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Fixedcost",
+            "type": "number"
+          },
+          "monthlyOrders": {
+            "maximum": 1000000000000.0,
+            "minimum": 0.0,
+            "title": "Monthlyorders",
+            "type": "integer"
+          },
+          "promoSubsidy": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Promosubsidy",
+            "type": "number"
+          },
+          "revenuePerOrder": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Revenueperorder",
+            "type": "number"
+          },
+          "variableCostPerOrder": {
+            "maximum": 1000000000000000.0,
+            "minimum": 0.0,
+            "title": "Variablecostperorder",
+            "type": "number"
+          }
+        },
+        "required": [
+          "monthlyOrders",
+          "revenuePerOrder",
+          "variableCostPerOrder",
+          "promoSubsidy",
+          "deliveryCost",
+          "fixedCost",
+          "driverCost",
+          "cashBalance"
+        ],
+        "title": "FinancialInputs",
+        "type": "object"
+      },
+      "FinancialResults": {
+        "additionalProperties": false,
+        "properties": {
+          "breakEvenOrders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Breakevenorders"
+          },
+          "contributionMargin": {
+            "title": "Contributionmargin",
+            "type": "number"
+          },
+          "contributionMarginPct": {
+            "title": "Contributionmarginpct",
+            "type": "number"
+          },
+          "monthlyBurn": {
+            "title": "Monthlyburn",
+            "type": "number"
+          },
+          "operatingProfit": {
+            "title": "Operatingprofit",
+            "type": "number"
+          },
+          "runwayMonths": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runwaymonths"
+          }
+        },
+        "required": [
+          "contributionMargin",
+          "contributionMarginPct",
+          "operatingProfit",
+          "monthlyBurn",
+          "runwayMonths",
+          "breakEvenOrders"
+        ],
+        "title": "FinancialResults",
+        "type": "object"
+      },
+      "FinancialWarningCode": {
+        "enum": [
+          "NEGATIVE_CONTRIBUTION_MARGIN",
+          "NEGATIVE_OPERATING_PROFIT",
+          "NON_POSITIVE_NET_REVENUE",
+          "LOW_RUNWAY",
+          "BREAK_EVEN_UNREACHABLE"
+        ],
+        "title": "FinancialWarningCode",
+        "type": "string"
+      },
+      "IdxBenchmark": {
+        "additionalProperties": false,
+        "properties": {
+          "benchmark": {
+            "title": "Benchmark",
+            "type": "string"
+          },
+          "benchmarkMetric": {
+            "const": "gross_margin",
+            "title": "Benchmarkmetric",
+            "type": "string"
+          },
+          "comparisonType": {
+            "const": "directional",
+            "title": "Comparisontype",
+            "type": "string"
+          },
+          "disclaimer": {
+            "title": "Disclaimer",
+            "type": "string"
+          },
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "sampleSize": {
+            "minimum": 1.0,
+            "title": "Samplesize",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "Below Benchmark",
+              "At Benchmark",
+              "Above Benchmark"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metric",
+          "value",
+          "benchmark",
+          "status",
+          "comparisonType",
+          "benchmarkMetric",
+          "sampleSize",
+          "disclaimer"
+        ],
+        "title": "IdxBenchmark",
+        "type": "object"
+      },
+      "LivenessResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "LivenessResponse",
+        "type": "object"
+      },
+      "ReadinessNotReadyResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "additionalProperties": {
+              "enum": [
+                "ready",
+                "not_ready"
+              ],
+              "type": "string"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "status": {
+            "const": "not_ready",
+            "default": "not_ready",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ],
+        "title": "ReadinessNotReadyResponse",
+        "type": "object"
+      },
+      "ReadinessReadyResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "const": "ready",
+            "default": "ready",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ReadinessReadyResponse",
+        "type": "object"
+      },
+      "SourceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "Academic",
+              "Industry Report",
+              "News",
+              "Case Study",
+              "Financial Filing"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Year"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "year",
+          "url"
+        ],
+        "title": "SourceItem",
+        "type": "object"
+      },
+      "ValidationExperiment": {
+        "additionalProperties": false,
+        "properties": {
+          "costLevel": {
+            "enum": [
+              "Low",
+              "Medium",
+              "High"
+            ],
+            "title": "Costlevel",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "linkedAssumptionId": {
+            "title": "Linkedassumptionid",
+            "type": "string"
+          },
+          "timeToRun": {
+            "title": "Timetorun",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "linkedAssumptionId",
+          "timeToRun",
+          "costLevel"
+        ],
+        "title": "ValidationExperiment",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Decision intelligence API for evidence, financial stress tests, and validation plans.",
+    "title": "Veritas API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/analyses": {
+      "get": {
+        "description": "Return compact newest-first history using an opaque stable cursor.",
+        "operationId": "list_analyses_api_v1_analyses_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 512,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisHistory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Analyses",
+        "tags": [
+          "analyses"
+        ]
+      },
+      "post": {
+        "description": "Persist a queued job, then schedule its single-process background execution.",
+        "operationId": "create_analysis_api_v1_analyses_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnalysisRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisAccepted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Create Analysis",
+        "tags": [
+          "analyses"
+        ]
+      }
+    },
+    "/api/v1/analyses/{analysis_id}": {
+      "get": {
+        "description": "Return the latest durable status, result, or safe job error.",
+        "operationId": "get_analysis_api_v1_analyses__analysis_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "discriminator": {
+                    "mapping": {
+                      "completed": "#/components/schemas/AnalysisCompleted",
+                      "failed": "#/components/schemas/AnalysisFailed",
+                      "processing": "#/components/schemas/AnalysisPending",
+                      "queued": "#/components/schemas/AnalysisPending"
+                    },
+                    "propertyName": "status"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AnalysisPending"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AnalysisCompleted"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AnalysisFailed"
+                    }
+                  ],
+                  "title": "Response Get Analysis Api V1 Analyses  Analysis Id  Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Get Analysis",
+        "tags": [
+          "analyses"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "description": "Confirm that the HTTP process is alive.",
+        "operationId": "live_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Live",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "description": "Confirm that bootstrap dependencies have initialized.",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessReadyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessNotReadyResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Ready",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}

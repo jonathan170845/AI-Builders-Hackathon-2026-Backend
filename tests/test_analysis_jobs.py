@@ -90,6 +90,7 @@ def persistent_app(tmp_path) -> Iterator[tuple[TestClient, str]]:
             max_queued=10,
         )
         app.state.database_ready = True
+        app.state.retrieval_service = object()
         yield client, database_url
 
 
@@ -134,6 +135,7 @@ def test_failed_pipeline_returns_safe_public_error_only(tmp_path):
             max_queued=10,
         )
         app.state.database_ready = True
+        app.state.retrieval_service = object()
         created = client.post("/api/v1/analyses", json=PAYLOAD)
         body = client.get(f"/api/v1/analyses/{created.json()['id']}").json()
 
@@ -189,12 +191,13 @@ def test_capacity_rejection_does_not_insert_a_new_row(tmp_path):
             max_queued=0,
         )
         app.state.database_ready = True
+        app.state.retrieval_service = object()
         response = client.post("/api/v1/analyses", json=PAYLOAD)
+        assert repository.list_history(limit=20, cursor=None).items == []
 
     assert response.status_code == 503
     assert response.headers["retry-after"] == "7"
     assert response.json()["error"]["code"] == "CAPACITY_EXCEEDED"
-    assert repository.list_history(limit=20, cursor=None).items == []
 
 
 def test_terminal_compare_and_set_and_restart_reconciliation(persistent_app):

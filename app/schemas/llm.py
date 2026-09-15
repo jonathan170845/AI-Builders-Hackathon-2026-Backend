@@ -6,7 +6,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.analysis import AssessmentLevel
+from app.schemas.analysis import (
+    AssessmentLevel,
+    EvidenceDirection,
+)
 
 
 class LLMStructuredModel(BaseModel):
@@ -66,3 +69,25 @@ class GroundingReview(LLMStructuredModel):
     disposition: Literal["keep", "weaken", "discard"]
     summary: str = Field(min_length=1, max_length=2_000)
     evidence_refs: list[EvidenceReference] = Field(default_factory=list, max_length=10)
+
+
+class EvidenceStrengthBreakdownLLM(LLMStructuredModel):
+    directness: float = Field(ge=0.0, le=2.0)
+    decision_specificity: float = Field(ge=0.0, le=2.0)
+    observed_evidence: float = Field(ge=0.0, le=2.0)
+    comparability: float = Field(ge=0.0, le=1.5)
+    coverage: float = Field(ge=0.0, le=1.5)
+    source_quality: float = Field(ge=0.0, le=1.0)
+
+
+class EvidenceStrengthScoring(LLMStructuredModel):
+    direction: EvidenceDirection
+
+    score_breakdown: EvidenceStrengthBreakdownLLM
+
+    reasoning: list[str] = Field(
+        min_length=1,
+        max_length=10,
+    )
+
+    user_evidence_found: bool

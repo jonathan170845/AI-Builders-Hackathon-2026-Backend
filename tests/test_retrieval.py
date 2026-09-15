@@ -42,7 +42,6 @@ def test_failure_retrieval_and_assumption_dtos_are_json_compatible(retrieval_ser
     payload = evidence[0].as_dict()
     assert [failure["company"] for failure in payload["historical_failures"]] == [
         "Failed Alpha",
-        "Failed Beta",
     ]
     json.dumps(payload)
 

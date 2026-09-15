@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import uuid4
 
 import uvicorn
@@ -9,11 +10,14 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.routes import analyses, health
 from app.core.config import Settings, get_settings
 from app.core.errors import ApiError
+from app.core.logging import configure_logging, log_event
+from app.core.middleware import RequestBoundary
 from app.db.analyses import AnalysisRepository
 from app.db.cache import LLMCache
 from app.db.session import create_engine_and_session_factory
@@ -21,6 +25,7 @@ from app.schemas.errors import ErrorDetail, ErrorResponse
 from app.services.artifacts import ArtifactValidationError, DataArtifacts, load_data_artifacts
 from app.services.jobs import AnalysisJobService
 from app.services.llm import CachedLLMClient, OpenRouterLLMClient
+from app.services.model_identity import local_model_fingerprint
 from app.services.pipeline import AnalysisPipeline, PipelineError
 from app.services.retrieval import RetrievalError, RetrievalService, SentenceTransformerEncoder
 
@@ -65,11 +70,16 @@ async def lifespan(app: FastAPI):
         pipeline_version=settings.analysis_pipeline_version,
         max_concurrent=settings.max_concurrent_analyses,
         max_queued=settings.max_queued_analyses,
+        timeout_seconds=settings.analysis_timeout_seconds,
     )
     try:
+        with engine.connect() as connection:
+            if connection.scalar(text("SELECT version_num FROM alembic_version")) != "20260911_03":
+                raise RuntimeError("Database migrations are not current")
         app.state.analysis_jobs.reconcile_interrupted()
         app.state.database_ready = True
     except Exception:  # Database migrations may not have been applied yet.
+        log_event("startup_failed", error_code="DATABASE_NOT_READY")
         app.state.database_ready = False
     app.state.data_artifacts = None
     app.state.retrieval_service = None
@@ -83,12 +93,14 @@ async def lifespan(app: FastAPI):
             "embedding_model": "ready",
         }
     except ArtifactValidationError:
+        log_event("startup_failed", error_code="ARTIFACTS_NOT_READY")
         app.state.readiness_checks = {
             "database": "ready" if app.state.database_ready else "not_ready",
             "artifacts": "not_ready",
             "embedding_model": "not_ready",
         }
     except RetrievalError:
+        log_event("startup_failed", error_code="MODEL_NOT_READY")
         app.state.readiness_checks = {
             "database": "ready" if app.state.database_ready else "not_ready",
             "artifacts": "ready",
@@ -111,6 +123,13 @@ def initialize_retrieval(settings: Settings) -> tuple[DataArtifacts, RetrievalSe
     if not settings.embedding_model_path_or_id:
         raise RetrievalError("Embedding model is not configured")
     model = artifacts.manifest["embedding_model"]
+    if model.get("local_sha256"):
+        try:
+            actual_hash = local_model_fingerprint(Path(settings.embedding_model_path_or_id))
+        except (OSError, ValueError) as exc:
+            raise RetrievalError("Local model identity cannot be verified") from exc
+        if actual_hash != model["local_sha256"]:
+            raise RetrievalError("Local model identity does not match the artifact manifest")
     encoder = SentenceTransformerEncoder(settings.embedding_model_path_or_id, model.get("revision"))
     return artifacts, RetrievalService(artifacts, encoder, max_top_k=settings.retrieval_max_top_k)
 
@@ -164,6 +183,7 @@ def error_response(
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging()
     app = FastAPI(
         title="Veritas API",
         version="0.1.0",
@@ -173,6 +193,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    app.add_middleware(RequestBoundary, max_bytes=MAX_REQUEST_BODY_BYTES)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.frontend_origins,
@@ -181,28 +202,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["Content-Type", "X-Request-ID"],
         expose_headers=["Location", "X-Request-ID"],
     )
-
-    @app.middleware("http")
-    async def add_request_id_and_limit_body(request: Request, call_next):
-        request.state.request_id = request.headers.get("X-Request-ID", str(uuid4()))
-        content_length = request.headers.get("Content-Length")
-        try:
-            is_request_too_large = (
-                content_length is not None and int(content_length) > MAX_REQUEST_BODY_BYTES
-            )
-        except ValueError:
-            is_request_too_large = False
-        if is_request_too_large:
-            response = error_response(
-                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
-                code="REQUEST_TOO_LARGE",
-                message="Request body exceeds the allowed size",
-                request=request,
-            )
-            return response
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request.state.request_id
-        return response
 
     @app.exception_handler(ApiError)
     async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
@@ -241,6 +240,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
+        log_event("request_failed", error_code=type(_exc).__name__)
         return error_response(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             code="INTERNAL_SERVER_ERROR",

@@ -91,13 +91,14 @@ class SentenceTransformerEncoder:
             self._model = SentenceTransformer(
                 model_path_or_id,
                 revision=revision,
-                model_kwargs={"trust_remote_code": False},
+                trust_remote_code=False,
+                local_files_only=True,
             )
         except Exception as exc:  # model errors must not leak filesystem/cache locations
             raise RetrievalError("Embedding model could not be loaded") from exc
 
     def dimension(self) -> int:
-        dimension = self._model.get_sentence_embedding_dimension()
+        dimension = self._model.get_embedding_dimension()
         if not isinstance(dimension, int):
             raise RetrievalError("Embedding model does not report a valid dimension")
         return dimension
@@ -130,6 +131,28 @@ def _rank_indices(scores: NDArray[np.floating], top_k: int) -> NDArray[np.intp]:
     order = np.lexsort((indices, -scores))
     return order[:top_k]
 
+def _filter_ranked_indices(
+    scores: NDArray[np.floating],
+    top_k: int,
+    *,
+    absolute_min: float,
+    relative_to_best: float,
+) -> NDArray[np.intp]:
+    ranked = _rank_indices(scores, top_k)
+
+    if ranked.size == 0:
+        return ranked
+
+    best_score = float(scores[ranked[0]])
+    threshold = max(
+        absolute_min,
+        best_score * relative_to_best,
+    )
+
+    return np.asarray(
+        [index for index in ranked if float(scores[index]) >= threshold],
+        dtype=np.intp,
+    )
 
 class RetrievalService:
     def __init__(
@@ -172,9 +195,21 @@ class RetrievalService:
         )
         _, vector = self._encode_query(query)
         scores = np.asarray(self._artifacts.failure_embeddings @ vector)
+
+        filtered_indices = _filter_ranked_indices(
+            scores,
+            top_k,
+            absolute_min=0.38,
+            relative_to_best=0.70,
+        )
+
         return tuple(
-            _failure_result(rank, self._artifacts.failure_documents[index], float(scores[index]))
-            for rank, index in enumerate(_rank_indices(scores, top_k), start=1)
+            _failure_result(
+                rank,
+                self._artifacts.failure_documents[index],
+                float(scores[index]),
+            )
+            for rank, index in enumerate(filtered_indices, start=1)
         )
 
     def retrieve_assumptions(
@@ -187,13 +222,41 @@ class RetrievalService:
         evidence: list[AssumptionEvidence] = []
         for position, raw_assumption in enumerate(assumptions, start=1):
             assumption_id, assumption, query = _normalize_assumption(raw_assumption, position)
+
+            company_analogues = self.company_analogues(
+                query,
+                top_k=top_company_analogues,
+            )
+
+            historical_failures = self.historical_failures(
+                query,
+                top_k=top_failure_cases,
+            )
+
+            # print(f"\n[RETRIEVAL DEBUG] {assumption_id}")
+            # print(f"Query: {query}")
+
+            # print("Historical failures:")
+            # for item in historical_failures:
+            #     print(
+            #         f"  {item.rank}. {item.company} "
+            #         f"(score={item.semantic_score:.6f})"
+            #     )
+
+            # print("Company analogues:")
+            # for item in company_analogues:
+            #     print(
+            #         f"  {item.rank}. {item.name} "
+            #         f"(score={item.semantic_score:.6f})"
+            #     )
+
             evidence.append(
                 AssumptionEvidence(
                     assumption_id=assumption_id,
                     assumption=assumption,
                     retrieval_query=query,
-                    company_analogues=self.company_analogues(query, top_k=top_company_analogues),
-                    historical_failures=self.historical_failures(query, top_k=top_failure_cases),
+                    company_analogues=company_analogues,
+                    historical_failures=historical_failures,
                 )
             )
         return tuple(evidence)
