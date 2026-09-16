@@ -30,6 +30,14 @@ dev = [
   "pytest-cov>=6,<8",
 ]
 
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
 
