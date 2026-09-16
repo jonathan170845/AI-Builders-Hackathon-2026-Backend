@@ -397,6 +397,23 @@
             "title": "Assessment",
             "type": "string"
           },
+          "evidenceDirection": {
+            "anyOf": [
+              {
+                "enum": [
+                  "supports",
+                  "contradicts",
+                  "mixed",
+                  "neutral"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidencedirection"
+          },
           "evidenceGaps": {
             "items": {
               "type": "string"
@@ -411,9 +428,39 @@
             "title": "Evidencerefs",
             "type": "array"
           },
+          "evidenceStrengthScore": {
+            "anyOf": [
+              {
+                "maximum": 10.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidencestrengthscore"
+          },
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "scoreBreakdown": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceStrengthBreakdown"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scoreReasoning": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scorereasoning",
+            "type": "array"
           },
           "summary": {
             "title": "Summary",
@@ -422,6 +469,11 @@
           "text": {
             "title": "Text",
             "type": "string"
+          },
+          "userEvidenceFound": {
+            "default": false,
+            "title": "Userevidencefound",
+            "type": "boolean"
           },
           "validationExperiment": {
             "title": "Validationexperiment",
@@ -433,6 +485,11 @@
           "text",
           "assessment",
           "summary",
+          "evidenceStrengthScore",
+          "evidenceDirection",
+          "scoreBreakdown",
+          "userEvidenceFound",
+          "scoreReasoning",
           "evidenceGaps",
           "validationExperiment",
           "evidenceRefs"
@@ -573,6 +630,57 @@
           "error"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EvidenceStrengthBreakdown": {
+        "additionalProperties": false,
+        "properties": {
+          "comparability": {
+            "maximum": 1.5,
+            "minimum": 0.0,
+            "title": "Comparability",
+            "type": "number"
+          },
+          "coverage": {
+            "maximum": 1.5,
+            "minimum": 0.0,
+            "title": "Coverage",
+            "type": "number"
+          },
+          "decisionSpecificity": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Decisionspecificity",
+            "type": "number"
+          },
+          "directness": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Directness",
+            "type": "number"
+          },
+          "observedEvidence": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Observedevidence",
+            "type": "number"
+          },
+          "sourceQuality": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Sourcequality",
+            "type": "number"
+          }
+        },
+        "required": [
+          "directness",
+          "decisionSpecificity",
+          "observedEvidence",
+          "comparability",
+          "coverage",
+          "sourceQuality"
+        ],
+        "title": "EvidenceStrengthBreakdown",
         "type": "object"
       },
       "FailureMechanism": {
