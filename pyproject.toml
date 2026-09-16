@@ -16,6 +16,7 @@ dependencies = [
   "pydantic-settings>=2.6,<3.0",
   "sentence-transformers>=6.0,<7.0",
   "sqlalchemy>=2.0,<3.0",
+  "torch>=2.0",
   "uvicorn[standard]>=0.32,<1.0",
 ]
 
