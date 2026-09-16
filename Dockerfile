@@ -6,7 +6,7 @@ COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY app ./app
 COPY alembic ./alembic
-COPY prepared-data ./prepared-data
+COPY prepared-data/startup-failure-metadata.json ./prepared-data/startup-failure-metadata.json
 COPY alembic.ini ./
 RUN uv sync --frozen --no-dev && useradd --create-home appuser && mkdir -p /state && chown appuser /state
 USER appuser
