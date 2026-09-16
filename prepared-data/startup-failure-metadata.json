@@ -1,0 +1,717 @@
+{
+  "AdBrite": {
+    "event_year": 2013,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Aereo": {
+    "event_year": 2014,
+    "event_type": "bankruptcy_shutdown",
+    "status": "verified"
+  },
+  "Agillion": {
+    "event_year": 2001,
+    "event_type": "bankruptcy",
+    "status": "verified"
+  },
+  "Airlift": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Aiwujiwu": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Akimbo": {
+    "event_year": 2008,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Anki": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Argo AI": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Arrivo": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Asempra Technologies": {
+    "event_year": 2009,
+    "event_type": "asset_sale_shutdown",
+    "status": "verified"
+  },
+  "Aura Financial": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Automatic": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Beenz.com": {
+    "event_year": 2001,
+    "event_type": "acquired_closed",
+    "status": "verified"
+  },
+  "Beequick": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Better Place": {
+    "event_year": 2013,
+    "event_type": "bankruptcy",
+    "status": "verified"
+  },
+  "BeyondMinds": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Bling Nation": {
+    "event_year": 2011,
+    "event_type": "service_shutdown",
+    "status": "verified"
+  },
+  "Brodmann17": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "BusRadio": {
+    "event_year": 2009,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Butler": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "BuyWithMe": {
+    "event_year": 2011,
+    "event_type": "acquired",
+    "status": "verified"
+  },
+  "COPAN Systems": {
+    "event_year": 2010,
+    "event_type": "asset_acquisition",
+    "status": "verified"
+  },
+  "Calxeda": {
+    "event_year": 2013,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Cana Technology": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "CareSync": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Cereva Networks": {
+    "event_year": 2002,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Chorus": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Clim8": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Color Labs": {
+    "event_year": 2012,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "CommonBond": {
+    "event_year": 2022,
+    "event_type": "wind_down",
+    "status": "probable"
+  },
+  "Crazy Teacher": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Cudoni": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Cuil": {
+    "event_year": 2010,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "DAQRI": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Daptiv": {
+    "event_year": 2014,
+    "event_type": "acquired",
+    "status": "verified"
+  },
+  "Dash Navigation": {
+    "event_year": 2009,
+    "event_type": "acquired",
+    "status": "verified"
+  },
+  "Daylight": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Dealstruck": {
+    "event_year": null,
+    "event_type": "restructuring_or_closure",
+    "status": "needs_review"
+  },
+  "DoubleTwist": {
+    "event_year": 2002,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Ecast": {
+    "event_year": 2012,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Edgix": {
+    "event_year": 2001,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Entellium": {
+    "event_year": 2008,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Essential Products": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Expand Networks": {
+    "event_year": 2011,
+    "event_type": "liquidation",
+    "status": "verified"
+  },
+  "FST Biometrics": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Fast": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Freshly": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Fridge No More": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "GoBear": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Goldfinch Bio": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Gridco Systems": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Hello": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Heygo": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Hipmunk": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Homejoy": {
+    "event_year": 2015,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Homepolish": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Houseparty": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Hubba": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "IRL": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "IfOnly": {
+    "event_year": 2020,
+    "event_type": "acquired_shutdown",
+    "status": "probable"
+  },
+  "Jawbone": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Juicero": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Jumpshot": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Karakuri": {
+    "event_year": 2023,
+    "event_type": "administration",
+    "status": "probable"
+  },
+  "Karhoo": {
+    "event_year": 2016,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Katerra": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Kite": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Kitty Hawk": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "KupiVIP": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "L1ght": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "needs_review"
+  },
+  "LOYAL3": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "LV Sensors": {
+    "event_year": 2009,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Lantern": {
+    "event_year": 2018,
+    "event_type": "wind_down",
+    "status": "verified"
+  },
+  "LeSports": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "LendUp": {
+    "event_year": 2021,
+    "event_type": "regulatory_shutdown",
+    "status": "verified"
+  },
+  "Lido Learning": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Lighthouse AI": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Local Motors": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Loon": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Mamsy": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Mandolin": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Microdisplay Corporation": {
+    "event_year": 2007,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Mindstrong": {
+    "event_year": 2023,
+    "event_type": "wind_down_asset_sale",
+    "status": "verified"
+  },
+  "Modsy": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Move Networks": {
+    "event_year": 2010,
+    "event_type": "asset_acquisition",
+    "status": "verified"
+  },
+  "Munchery": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "NebuAd": {
+    "event_year": 2009,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Neufund": {
+    "event_year": 2022,
+    "event_type": "platform_shutdown",
+    "status": "verified"
+  },
+  "Nice Tuan": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Nirvanix": {
+    "event_year": 2013,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Optiva": {
+    "event_year": 2005,
+    "event_type": "asset_sale_or_insolvency",
+    "status": "needs_review"
+  },
+  "Oryx Vision": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Panda TV": {
+    "event_year": 2019,
+    "event_type": "bankruptcy_shutdown",
+    "status": "verified"
+  },
+  "Pearl Automation": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "PepperTap": {
+    "event_year": 2016,
+    "event_type": "business_shutdown",
+    "status": "probable"
+  },
+  "Pets.com": {
+    "event_year": 2000,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Phytelligence": {
+    "event_year": 2019,
+    "event_type": "liquidation",
+    "status": "probable"
+  },
+  "Pillow": {
+    "event_year": 2018,
+    "event_type": "acquired",
+    "status": "probable"
+  },
+  "Pixelon": {
+    "event_year": 2000,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Quantopian": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Quibi": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Quillion Tech": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "RatePoint": {
+    "event_year": 2011,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Raze Therapeutics": {
+    "event_year": 2015,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Reali": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Recycling Technologies": {
+    "event_year": 2022,
+    "event_type": "administration_shutdown",
+    "status": "probable"
+  },
+  "Roadstar.ai": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Sand 9": {
+    "event_year": 2015,
+    "event_type": "acquired",
+    "status": "verified"
+  },
+  "Savaje Technologies": {
+    "event_year": 2007,
+    "event_type": "asset_acquisition",
+    "status": "probable"
+  },
+  "ScaleFactor": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Seatwave": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Seeker Biologics": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Sequoia Communications": {
+    "event_year": 2009,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Seven Dreamers Laboratories": {
+    "event_year": 2019,
+    "event_type": "bankruptcy",
+    "status": "verified"
+  },
+  "Shoes of Prey": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Shyp": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Singulex": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Solyndra": {
+    "event_year": 2011,
+    "event_type": "bankruptcy_shutdown",
+    "status": "probable"
+  },
+  "Sprig": {
+    "event_year": 2017,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Starsky Robotics": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Stay Alfred": {
+    "event_year": 2020,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Stratoscale": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Summation Bio": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "TerraLUX": {
+    "event_year": null,
+    "event_type": "shutdown",
+    "status": "needs_review"
+  },
+  "Tessera": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Theranos": {
+    "event_year": 2018,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Tink Labs": {
+    "event_year": 2019,
+    "event_type": "service_shutdown_restructuring",
+    "status": "verified"
+  },
+  "TrueSAN Networks": {
+    "event_year": null,
+    "event_type": "shutdown",
+    "status": "needs_review"
+  },
+  "Underground Cellar": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Veoh Networks": {
+    "event_year": 2010,
+    "event_type": "bankruptcy",
+    "status": "verified"
+  },
+  "Vicis": {
+    "event_year": 2019,
+    "event_type": "bankruptcy",
+    "status": "probable"
+  },
+  "Volt Bank": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "WanderJaunt": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Webvan Group": {
+    "event_year": 2001,
+    "event_type": "bankruptcy_shutdown",
+    "status": "verified"
+  },
+  "Wellfount": {
+    "event_year": 2019,
+    "event_type": "shutdown",
+    "status": "verified"
+  },
+  "Wyre": {
+    "event_year": 2023,
+    "event_type": "wind_down",
+    "status": "verified"
+  },
+  "Xinja": {
+    "event_year": 2020,
+    "event_type": "banking_exit",
+    "status": "probable"
+  },
+  "YCloset": {
+    "event_year": 2021,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Yunniao": {
+    "event_year": 2019,
+    "event_type": "collapse",
+    "status": "needs_review"
+  },
+  "Zero Grocery": {
+    "event_year": 2022,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "Zume": {
+    "event_year": 2023,
+    "event_type": "shutdown",
+    "status": "probable"
+  },
+  "govWorks": {
+    "event_year": 2001,
+    "event_type": "bankruptcy",
+    "status": "probable"
+  },
+  "uBiome": {
+    "event_year": 2019,
+    "event_type": "bankruptcy_liquidation",
+    "status": "probable"
+  }
+}
