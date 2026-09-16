@@ -12,15 +12,16 @@ from app.schemas.analysis import CreateAnalysisRequest
 from app.schemas.llm import ExtractedAssumption, GroundedEvaluation
 from app.services.llm import LLMCompletion
 from app.services.pipeline import (
+    EVALUATE_SYSTEM_PROMPT,
     AnalysisPipeline,
     PipelineError,
-    EVALUATE_SYSTEM_PROMPT,
     _build_final_assumption_summary,
     _build_final_evidence_gaps,
     _enforce_historical_evidence_policy,
     _experiment_for,
 )
 from app.services.retrieval import AssumptionEvidence, CompanyAnalogue, HistoricalFailure
+
 
 class FakeLLM:
     model = "fake/test-model"
